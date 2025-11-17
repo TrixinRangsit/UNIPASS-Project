@@ -5,7 +5,6 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/api.dart';
-import '../services/api.dart'; // contains API_BASE
 import 'login_page.dart';
 
 class LecturerHome extends StatefulWidget {
@@ -175,39 +174,34 @@ class _LecturerHomeState extends State<LecturerHome> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
   }
 
+  Future<void> _callEmergencyContact(String phone) async {
+    final url = Uri.parse('tel:$phone');
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url);
+      } else {
+        _show('Cannot make call');
+      }
+    } catch (e) {
+      _show('Error making call');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final pages = [_profileTab(), _qrTab(), _genTab(), _viewTab()];
+    final pages = [
+      _profileTab(),
+      _qrTab(),
+      _genTab(),
+      _viewTab(),
+      _emergencyTab(),
+    ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Lecturer — ${profile['name'] ?? widget.id}',
-          style: const TextStyle(
-            color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout, color: Colors.black),
-          ),
-        ],
-      ),
       body: IndexedStack(index: index, children: pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: index,
-        onTap: (i) => setState(() => index = i),
+        type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         selectedItemColor: const Color(0xFF0052CC),
         unselectedItemColor: Colors.grey,
@@ -220,7 +214,12 @@ class _LecturerHomeState extends State<LecturerHome> {
             label: 'Generate',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'View'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.emergency),
+            label: 'Emergency',
+          ),
         ],
+        onTap: (i) => setState(() => index = i),
       ),
     );
   }
@@ -526,6 +525,23 @@ class _LecturerHomeState extends State<LecturerHome> {
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
                 ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout, size: 20),
+            label: const Text(
+              'Logout',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red,
+              side: const BorderSide(color: Colors.red, width: 2),
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
@@ -1306,6 +1322,276 @@ class _LecturerHomeState extends State<LecturerHome> {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _emergencyTab() {
+    return Container(
+      color: const Color(0xFFF5F1E8),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Header Card
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 20, bottom: 20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEDE7DB),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  // Decorative circles
+                  Positioned(
+                    left: -50,
+                    top: 50,
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8C4A0).withOpacity(0.3),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: -30,
+                    bottom: 30,
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8C4A0).withOpacity(0.3),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Header
+                        const Text(
+                          'UNIPASS',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E3A5F),
+                            letterSpacing: 3,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Emergency Contacts',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF666666),
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        // Emergency Icon
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD32F2F),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.emergency,
+                            color: Colors.white,
+                            size: 40,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Quick access to emergency services',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF666666),
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // University Emergency Contacts Section
+            const Text(
+              'University Emergency Contacts',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Colors.black,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            _buildUniversityContact(
+              'Campus Security Hotline',
+              '+66 xxx xxx xxx',
+              Icons.security,
+              const Color(0xFFD32F2F),
+            ),
+            _buildUniversityContact(
+              'Emergency Medical Unit',
+              '+66 xxx xxx xxx',
+              Icons.local_hospital,
+              const Color(0xFFE53935),
+            ),
+            _buildUniversityContact(
+              'Fire & Safety Department',
+              '+66 xxx xxx xxx',
+              Icons.fire_extinguisher,
+              const Color(0xFFF44336),
+            ),
+            _buildUniversityContact(
+              'Counseling & Student Support',
+              '+66 xxx xxx xxx',
+              Icons.psychology,
+              const Color(0xFF1976D2),
+            ),
+            _buildUniversityContact(
+              'IT Department (System Issues)',
+              '+66 xxx xxx xxx',
+              Icons.computer,
+              const Color(0xFF0288D1),
+            ),
+            const SizedBox(height: 16),
+            // Email Support Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE0E0E0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF757575).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.email,
+                      color: Color(0xFF757575),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Email Support',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'helpdesk@youruniversity.edu',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUniversityContact(
+    String title,
+    String phone,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            phone,
+            style: TextStyle(color: Colors.grey[600], fontSize: 13),
+          ),
+        ),
+        trailing: IconButton(
+          icon: Icon(Icons.phone, color: color, size: 24),
+          onPressed: () => _callEmergencyContact(phone),
         ),
       ),
     );
