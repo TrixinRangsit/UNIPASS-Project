@@ -19,4 +19,18 @@ class Api {
     final url = Uri.parse('$API_BASE$path');
     return http.get(url);
   }
+
+  static Future<http.Response> put(String path, Map body) {
+    final url = Uri.parse('$API_BASE$path');
+    return http.put(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+  }
+
+  static Future<http.Response> delete(String path) {
+    final url = Uri.parse('$API_BASE$path');
+    return http.delete(url);
+  }
 }
