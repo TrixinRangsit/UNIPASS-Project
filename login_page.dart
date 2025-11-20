@@ -6,6 +6,7 @@ import '../services/api.dart';
 import 'register_page.dart';
 import 'student_home.dart';
 import 'lecturer_home.dart';
+import 'admin_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -35,10 +36,15 @@ class _LoginPageState extends State<LoginPage> {
           context,
           MaterialPageRoute(builder: (_) => StudentHome(id: id)),
         );
-      } else {
+      } else if (role == 'lecturer') {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => LecturerHome(id: id)),
+        );
+      } else if (role == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminDashboard()),
         );
       }
     }
@@ -50,6 +56,24 @@ class _LoginPageState extends State<LoginPage> {
 
     if (id.isEmpty || pw.isEmpty) return _show('Enter ID & password');
 
+    // LOCAL ADMIN LOGIN (fallback option)
+    if (id == "admin123" && pw == "pass123") {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setString('id', id);
+      await sp.setString('role', 'admin');
+      await sp.setString('name', 'Administrator');
+
+      if (!mounted) return;
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminDashboard()),
+        (route) => false,
+      );
+      return;
+    }
+
+    // NORMAL API LOGIN
     setState(() => loading = true);
 
     try {
@@ -70,10 +94,15 @@ class _LoginPageState extends State<LoginPage> {
             context,
             MaterialPageRoute(builder: (_) => StudentHome(id: data['id'])),
           );
-        } else {
+        } else if (data['role'] == 'lecturer') {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => LecturerHome(id: data['id'])),
+          );
+        } else if (data['role'] == 'admin') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminDashboard()),
           );
         }
       } else {
@@ -89,6 +118,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _show(String s) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
   }
 
@@ -100,254 +130,268 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
+  void dispose() {
+    idCtrl.dispose();
+    pwCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1a1d2e),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top decorative section with pattern
-            Expanded(
-              flex: 2,
-              child: Stack(
-                children: [
-                  // Pattern background
-                  Container(
-                    decoration: const BoxDecoration(color: Color(0xFF1a1d2e)),
-                    child: CustomPaint(
-                      painter: CirclePatternPainter(),
-                      child: Container(),
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF1a1d2e),
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Top decorative section with pattern
+              Expanded(
+                flex: 2,
+                child: Stack(
+                  children: [
+                    // Pattern background
+                    Container(
+                      decoration: const BoxDecoration(color: Color(0xFF1a1d2e)),
+                      child: CustomPaint(
+                        painter: CirclePatternPainter(),
+                        child: Container(),
+                      ),
+                    ),
+                    // UniPass Title in center
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ShaderMask(
+                            shaderCallback: (bounds) => const LinearGradient(
+                              colors: [
+                                Color(0xFF1E88E5), // Blue
+                                Color(0xFF5E35B1), // Purple
+                                Color(0xFF8E24AA), // Deep purple
+                              ],
+                            ).createShader(bounds),
+                            child: const Text(
+                              'UNIPASS',
+                              style: TextStyle(
+                                fontSize: 56,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 15),
+                          Text(
+                            'Your Digital Campus ID',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.8),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Bottom white section with form
+              Expanded(
+                flex: 3,
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(40),
+                      topRight: Radius.circular(40),
                     ),
                   ),
-                  // UniPass Logo in center
-                  Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(30),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        CustomPaint(
-                          size: const Size(120, 120),
-                          painter: UniPassLogoPainter(),
-                        ),
-                        const SizedBox(height: 15),
+                        const SizedBox(height: 20),
+
+                        // Title
                         const Text(
-                          'UniPass',
+                          "Login",
                           style: TextStyle(
-                            fontSize: 32,
+                            fontSize: 36,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: -0.5,
+                            color: Colors.black,
                           ),
                         ),
-                        const SizedBox(height: 5),
+
+                        const SizedBox(height: 8),
+
+                        // Subtitle
                         Text(
-                          'Your Digital Campus ID',
+                          "Sign in to continue.",
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.white.withOpacity(0.8),
-                            letterSpacing: 0.5,
+                            color: Colors.grey.shade500,
                           ),
                         ),
+
+                        const SizedBox(height: 40),
+
+                        // ID label
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 8, bottom: 8),
+                            child: Text(
+                              "ID",
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade400,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // ID field
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: TextField(
+                            controller: idCtrl,
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 18,
+                              ),
+                              hintText: "Enter your ID",
+                              hintStyle: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 25),
+
+                        // PASSWORD label
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 8, bottom: 8),
+                            child: Text(
+                              "PASSWORD",
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade400,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Password field
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: TextField(
+                            controller: pwCtrl,
+                            obscureText: hidePassword,
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 18,
+                              ),
+                              hintText: "••••••",
+                              hintStyle: const TextStyle(
+                                color: Colors.black54,
+                                fontSize: 16,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  hidePassword
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                  color: Colors.grey.shade600,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    hidePassword = !hidePassword;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 35),
+
+                        // Login button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 55,
+                          child: ElevatedButton(
+                            onPressed: loading ? null : _login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1a1d2e),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: loading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    "Log In",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 25),
+
+                        // Sign up
+                        TextButton(
+                          onPressed: _goRegister,
+                          child: Text(
+                            "Sign-up !",
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            // Bottom white section with form
-            Expanded(
-              flex: 3,
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(40),
-                    topRight: Radius.circular(40),
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(30),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 20),
-
-                      // Title
-                      const Text(
-                        "Login",
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Subtitle
-                      Text(
-                        "Sign in to continue.",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-
-                      const SizedBox(height: 40),
-
-                      // ID label
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 8, bottom: 8),
-                          child: Text(
-                            "ID",
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade400,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // ID field
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: TextField(
-                          controller: idCtrl,
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 18,
-                            ),
-                            hintText: "Enter your ID",
-                            hintStyle: TextStyle(
-                              color: Colors.black54,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 25),
-
-                      // PASSWORD label
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 8, bottom: 8),
-                          child: Text(
-                            "PASSWORD",
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade400,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Password field
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: TextField(
-                          controller: pwCtrl,
-                          obscureText: hidePassword,
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 18,
-                            ),
-                            hintText: "••••••",
-                            hintStyle: const TextStyle(
-                              color: Colors.black54,
-                              fontSize: 16,
-                            ),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                hidePassword
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                                color: Colors.grey.shade600,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  hidePassword = !hidePassword;
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 35),
-
-                      // Login button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 55,
-                        child: ElevatedButton(
-                          onPressed: loading ? null : _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1a1d2e),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: loading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text(
-                                  "Log In",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 25),
-
-                      // Sign up
-                      TextButton(
-                        onPressed: _goRegister,
-                        child: Text(
-                          "Sign-up !",
-                          style: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-                    ],
-                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -381,136 +425,6 @@ class CirclePatternPainter extends CustomPainter {
         paint..color = const Color(0xFF3d4564).withOpacity(0.4),
       );
     }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// Custom painter for UniPass logo
-class UniPassLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double w = size.width;
-    final double h = size.height;
-
-    // Shield shape path
-    final shieldPath = Path();
-    shieldPath.moveTo(w * 0.5, 0);
-    shieldPath.cubicTo(
-      w * 0.2,
-      h * 0.05,
-      w * 0.05,
-      h * 0.15,
-      w * 0.05,
-      h * 0.4,
-    );
-    shieldPath.cubicTo(w * 0.05, h * 0.7, w * 0.3, h * 0.9, w * 0.5, h);
-    shieldPath.cubicTo(w * 0.7, h * 0.9, w * 0.95, h * 0.7, w * 0.95, h * 0.4);
-    shieldPath.cubicTo(w * 0.95, h * 0.15, w * 0.8, h * 0.05, w * 0.5, 0);
-    shieldPath.close();
-
-    // Gradient for shield
-    final shieldGradient = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [
-        const Color(0xFF1E88E5), // Blue
-        const Color(0xFF5E35B1), // Purple
-        const Color(0xFF8E24AA), // Deep purple
-      ],
-    );
-
-    final shieldPaint = Paint()
-      ..shader = shieldGradient.createShader(Rect.fromLTWH(0, 0, w, h))
-      ..style = PaintingStyle.fill;
-
-    canvas.drawPath(shieldPath, shieldPaint);
-
-    // White inner section
-    final whitePaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    final whiteRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(w * 0.2, h * 0.45, w * 0.6, h * 0.35),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(whiteRect, whitePaint);
-
-    // Draw "U" shape with arrows
-    final uPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.08
-      ..strokeCap = StrokeCap.round;
-
-    // Left arrow (blue)
-    final leftArrowGradient = LinearGradient(
-      begin: Alignment.bottomCenter,
-      end: Alignment.topCenter,
-      colors: [const Color(0xFF1E88E5), const Color(0xFF42A5F5)],
-    );
-    uPaint.shader = leftArrowGradient.createShader(
-      Rect.fromLTWH(w * 0.3, h * 0.25, w * 0.15, h * 0.4),
-    );
-
-    final leftPath = Path();
-    leftPath.moveTo(w * 0.35, h * 0.55);
-    leftPath.lineTo(w * 0.35, h * 0.35);
-    leftPath.lineTo(w * 0.42, h * 0.35);
-    canvas.drawPath(leftPath, uPaint);
-
-    // Left arrow head
-    final leftArrowHead = Path();
-    leftArrowHead.moveTo(w * 0.32, h * 0.3);
-    leftArrowHead.lineTo(w * 0.42, h * 0.2);
-    leftArrowHead.lineTo(w * 0.52, h * 0.3);
-    canvas.drawPath(leftArrowHead, uPaint);
-
-    // Right arrow (purple)
-    final rightArrowGradient = LinearGradient(
-      begin: Alignment.bottomCenter,
-      end: Alignment.topCenter,
-      colors: [const Color(0xFF8E24AA), const Color(0xFFAB47BC)],
-    );
-    uPaint.shader = rightArrowGradient.createShader(
-      Rect.fromLTWH(w * 0.55, h * 0.25, w * 0.15, h * 0.4),
-    );
-
-    final rightPath = Path();
-    rightPath.moveTo(w * 0.65, h * 0.55);
-    rightPath.lineTo(w * 0.65, h * 0.35);
-    rightPath.lineTo(w * 0.58, h * 0.35);
-    canvas.drawPath(rightPath, uPaint);
-
-    // Right arrow head
-    final rightArrowHead = Path();
-    rightArrowHead.moveTo(w * 0.68, h * 0.3);
-    rightArrowHead.lineTo(w * 0.58, h * 0.2);
-    rightArrowHead.lineTo(w * 0.48, h * 0.3);
-    canvas.drawPath(rightArrowHead, uPaint);
-
-    // Bottom U curve
-    final bottomPaint = Paint()
-      ..color = const Color(0xFF5E35B1)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.08
-      ..strokeCap = StrokeCap.round;
-
-    final uCurve = Path();
-    uCurve.moveTo(w * 0.35, h * 0.55);
-    uCurve.quadraticBezierTo(w * 0.35, h * 0.7, w * 0.5, h * 0.7);
-    uCurve.quadraticBezierTo(w * 0.65, h * 0.7, w * 0.65, h * 0.55);
-    canvas.drawPath(uCurve, bottomPaint);
-
-    // Draw dots (representing data/connectivity)
-    final dotPaint = Paint()
-      ..color = const Color(0xFF4CAF50)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(Offset(w * 0.2, h * 0.42), w * 0.025, dotPaint);
-    canvas.drawCircle(Offset(w * 0.24, h * 0.42), w * 0.025, dotPaint);
-    canvas.drawCircle(Offset(w * 0.28, h * 0.44), w * 0.02, dotPaint);
   }
 
   @override
